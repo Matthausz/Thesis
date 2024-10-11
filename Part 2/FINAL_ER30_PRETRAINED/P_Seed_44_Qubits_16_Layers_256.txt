@@ -1,0 +1,4 @@
+500 iters for seed 44 on ER0.3 which is in the 95.70388793945312 percentile
+ Maxcut: 29.0, MedianCut: 19.0
+-23.999999651560092
+-23.999999699219597

@@ -1,0 +1,4 @@
+500 iters for seed 143 on ER0.3 which is in the 82.00607299804688 percentile
+ Maxcut: 34.0, MedianCut: 23.0
+-25.99999990245866
+-25.999999938057307

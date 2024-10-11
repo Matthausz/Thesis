@@ -1,0 +1,5 @@
+500 iters for seed 116 on ER0.3 which is in the 84.37576293945312 percentile
+ TRIAL: 0 
+ Maxcut: 28.0, MedianCut: 18.0
+-20.9999998566483
+-20.999999888907283

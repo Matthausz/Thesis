@@ -1,0 +1,4 @@
+500 iters for seed 57 on ER0.3 which is in the 98.57101440429688 percentile
+ Maxcut: 26.0, MedianCut: 16.0
+-21.999999582216564
+-21.999999625633126
