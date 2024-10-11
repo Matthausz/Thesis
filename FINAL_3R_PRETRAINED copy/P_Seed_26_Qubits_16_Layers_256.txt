@@ -1,0 +1,4 @@
+500 iters for seed 26 on 3R0.3 which is in the 95.18661499023438 percentile
+ Maxcut: 20.0, MedianCut: 12.0
+-15.999999865952642
+-15.999999895885631

@@ -1,0 +1,4 @@
+500 iters for seed 51 on 3R0.3 which is in the 99.27902221679688 percentile
+ Maxcut: 22.0, MedianCut: 12.0
+-17.999999649727563
+-17.99999968642726

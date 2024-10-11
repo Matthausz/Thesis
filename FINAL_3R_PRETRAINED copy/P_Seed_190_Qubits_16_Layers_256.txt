@@ -1,0 +1,4 @@
+500 iters for seed 190 on 3R0.3 which is in the 94.66323852539062 percentile
+ Maxcut: 22.0, MedianCut: 12.0
+-15.999999803846698
+-15.999999834448715

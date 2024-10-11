@@ -1,0 +1,4 @@
+500 iters for seed 131 on 3R0.3 which is in the 95.24765014648438 percentile
+ Maxcut: 20.0, MedianCut: 12.0
+-15.999999873575037
+-15.999999908616786
