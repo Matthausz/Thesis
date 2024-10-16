@@ -2,6 +2,258 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
+import matplotlib.lines as mlines
+
+def plot_combined_horizontal(Random_ER_results, Pretrained_ER_results, 
+                             Random_3R_results, Pretrained_3R_results, 
+                             all_runs, names, labels):
+    """
+    Plots all results in a horizontally arranged figure with 2 rows and 3 columns.
+    
+    Each row corresponds to a graph type (3-Regular and ER30) and contains:
+    - Pretrained individual runs.
+    - Random individual runs.
+    - Mean cumulative maximum with confidence intervals.
+    """
+    
+    # Define font sizes
+    title_fontsize = 26
+    label_fontsize = 22
+    tick_fontsize = 20
+    legend_fontsize = 22
+    subtitle_fontsize = 30
+
+    # Define color scheme
+    random_color = '#ff7f0e'      # Orange
+    pretrained_color = '#1f77b4'  # Blue
+
+    # Create a figure with 2 rows and 3 columns
+    fig, axes = plt.subplots(2, 3, figsize=(24, 16), sharey=False)
+
+    # ------------------------------
+    # Helper function to plot individual runs
+    # ------------------------------
+    def plot_individual_runs(ax, runs, title, color, show_ylabel=True, Title=False, set_legend=False):
+        """
+        Plots individual runs on the given axis.
+        
+        Parameters:
+        - ax (matplotlib.axes.Axes): The axis to plot on.
+        - runs (list of lists): Each inner list contains approximation ratios for a single run.
+        - title (str): Title for the subplot.
+        - color (str): Color for the individual runs.
+        - show_ylabel (bool): Whether to show y-axis labels and ticks.
+        - Title (bool): Whether to set the title.
+        - set_legend (bool): Whether to set the legend.
+        """
+        for run in runs:
+            iterations = list(range(1, len(run) + 1))
+            if len(iterations) < 10:
+                ax.plot(iterations, 100 * np.array(run), color='purple', linewidth=3)
+            else:
+                ax.plot(iterations, 100 * np.array(run), alpha=0.3, color=color)
+        
+        ax.axhline(y=87.8, color='r', linestyle='--',  linewidth=3,label='GW Threshold')
+        if Title:
+            ax.set_title(title, fontsize=title_fontsize)
+        ax.set_xlabel("Iteration", fontsize=label_fontsize)
+        
+        if show_ylabel:
+            ax.set_ylabel("Approximation Ratio (%)", fontsize=label_fontsize)
+        else:
+            ax.set_ylabel("")
+            ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+        
+        ax.set_ylim(50, 100)
+        ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        ax.set_xlim(0, 500)
+        ax.grid(True)
+        
+        # Handle legends to avoid duplicate labels
+        if set_legend:
+            # Create custom legend handles using Line2D
+            pretrained_line = mlines.Line2D([], [], color=pretrained_color, linewidth=2, label='Pretrained QAOA')
+            random_line = mlines.Line2D([], [], color=random_color, linewidth=2, label='Randomly initialised QAOA')
+            gw_line = mlines.Line2D([], [], color='r', linestyle='--', linewidth=2, label='Goemans-Williamson Threshold')
+            
+            # Add the legend to the axis
+            ax.legend(handles=[pretrained_line, random_line, gw_line],
+                      loc='upper left',
+                      fontsize=legend_fontsize,
+                      framealpha=0.9)
+
+    # ------------------------------
+    # Helper function to plot mean with confidence intervals
+    # ------------------------------
+    def plot_mean_with_ci(ax, runs_group, name, dataset_labels, show_ylabel=True, set_legend=False):
+        """
+        Plots the mean cumulative maximum with 95% confidence intervals.
+        
+        Parameters:
+        - ax (matplotlib.axes.Axes): The axis to plot on.
+        - runs_group (list of lists): Each inner list contains runs for a dataset.
+        - name (str): Title for the subplot.
+        - dataset_labels (list of str): Labels for each dataset.
+        - show_ylabel (bool): Whether to show y-axis labels and ticks.
+        - set_legend (bool): Whether to set legend for the subplot.
+        """
+        for runs, dataset_label in zip(runs_group, dataset_labels):
+            # Determine the maximum number of iterations across all runs for this dataset
+            max_iterations = max(len(run) for run in runs)
+
+            # Initialize a list to store cumulative maxima for each run
+            cumulative_max_runs = []
+
+            for run in runs:
+                cumulative_max = []
+                current_max = -np.inf
+                for val in run:
+                    if val > current_max:
+                        current_max = val
+                    cumulative_max.append(current_max)
+                # If the run has fewer iterations than max_iterations, extend with the last max
+                if len(cumulative_max) < max_iterations:
+                    last_max = cumulative_max[-1]
+                    cumulative_max.extend([last_max] * (max_iterations - len(cumulative_max)))
+                cumulative_max_runs.append(cumulative_max)
+
+            # Convert to a NumPy array for easier manipulation
+            cumulative_max_array = np.array(cumulative_max_runs)  # Shape: (num_runs, max_iterations)
+
+            # Calculate mean and confidence intervals
+            mean_values = np.mean(cumulative_max_array, axis=0)
+            sem_values = stats.sem(cumulative_max_array, axis=0)
+            confidence = 0.95  # 95% confidence interval
+            z_score = stats.norm.ppf(1 - (1 - confidence) / 2)  # Two-tailed
+
+            margin_of_error = z_score * sem_values
+            lower_bounds = mean_values - margin_of_error
+            upper_bounds = mean_values + margin_of_error
+
+            # Define iterations for plotting
+            iterations = np.arange(1, max_iterations + 1)
+
+            # Determine color based on dataset label
+            if 'Random' in dataset_label:
+                color = random_color
+            elif 'Pretrained' in dataset_label:
+                color = pretrained_color
+            else:
+                color = 'gray'  # Default color if needed
+
+            print(f"The final mean approximation ratio for {name} using {dataset_label} is {100*mean_values[-1]:.2f}%\n")
+            # Plot the mean line
+            ax.plot(iterations, 100 * mean_values, label=f'{dataset_label}', linewidth=2, color=color)
+
+            # Plot the confidence interval as a shaded area
+            ax.fill_between(iterations, 100 * lower_bounds, 100 * upper_bounds, alpha=0.3, color=color)
+        
+        # Reference horizontal line
+        ax.axhline(y=87.8, color='r', linestyle='--', linewidth=3,label='Goemans-Williamson Threshold')
+        
+        if show_ylabel:
+            ax.set_ylabel("Approximation Ratio (%)", fontsize=label_fontsize)
+        else:
+            ax.set_ylabel("")
+            ax.tick_params(axis='y', which='both', left=False, labelleft=False)
+        
+        ax.set_xlabel("Iteration", fontsize=label_fontsize)
+        ax.set_ylim(50, 100)
+        ax.tick_params(axis='both', which='major', labelsize=tick_fontsize)
+        ax.set_xlim(0, 500)
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        # Handle legends to avoid duplicate labels
+        if set_legend:
+            handles, labels_ = ax.get_legend_handles_labels()
+            unique = dict(zip(labels_, handles))
+            ax.legend(unique.values(), unique.keys(), loc='upper left', fontsize=legend_fontsize, framealpha=0.9)
+
+    # ------------------------------
+    # Plotting for 3-Regular (Top Row)
+    # ------------------------------
+    # Pretrained individual runs for 3-Regular (Top-Left)
+    plot_individual_runs(
+        ax=axes[0, 0],
+        runs=Pretrained_3R_results['all_runs'],
+        title="",  # No title
+        color=pretrained_color,
+        show_ylabel=True,    # Show y-axis label and ticks for the first plot in the row
+        Title=False,         # Do not set title here
+        set_legend=False      # Legend will be set on the middle plot
+    )
+    
+    # Random individual runs for 3-Regular (Top-Middle) - With Title and Legend
+    plot_individual_runs(
+        ax=axes[0, 1],
+        runs=Random_3R_results['all_runs'],
+        title="",  # Title will be set as a column title
+        color=random_color,
+        show_ylabel=False,  
+        Title=False,         # No individual subplot title
+        set_legend=True      # Set legend on this subplot
+    )
+    
+    # Mean plot for 3-Regular (Top-Right)
+    plot_mean_with_ci(
+        ax=axes[0, 2],
+        runs_group=all_runs[0],
+        name=names[1],
+        dataset_labels=labels,
+        show_ylabel=False,    # y-label shown only on the first plot in the row
+        set_legend=False      # Legend moved to the middle plot
+    )
+    
+    # ------------------------------
+    # Plotting for ER30 (Bottom Row)
+    # ------------------------------
+    # Pretrained individual runs for ER30 (Bottom-Left)
+    plot_individual_runs(
+        ax=axes[1, 0],
+        runs=Pretrained_ER_results['all_runs'],
+        title="",  # No title
+        color=pretrained_color,
+        show_ylabel=True,    # Show y-axis label and ticks for the first plot in the row
+        Title=False,         # Do not set title here
+        set_legend=False      # Legend already set on the top middle plot
+    )
+    
+    # Random individual runs for ER30 (Bottom-Middle) - With Title
+    plot_individual_runs(
+        ax=axes[1, 1],
+        runs=Random_ER_results['all_runs'],
+        title="",  # Title will be set as a column title
+        color=random_color,
+        show_ylabel=False,   
+        Title=False,         # No individual subplot title
+        set_legend=False      # Legend already set on the top middle plot
+    )
+    
+    # Mean plot for ER30 (Bottom-Right)
+    plot_mean_with_ci(
+        ax=axes[1, 2],
+        runs_group=all_runs[1],
+        name=names[0],
+        dataset_labels=labels,
+        show_ylabel=False,    # y-label shown only on the first plot in the row
+        set_legend=False      # Legend already set on the top middle plot
+    )
+
+    column_titles = ["Pretrained Runs", "Randomly Initialised Runs", "Mean (Confidence Interval)"]
+    for i, title in enumerate(column_titles):
+        axes[0, i].set_title(title, fontsize=subtitle_fontsize, pad=20)  # Apply to the first row for column titles
+
+    for ax in axes.flat:
+        ax.grid(True, alpha=0.3)
+
+    # Adjust layout to prevent overlap
+    plt.tight_layout()
+    plt.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.1)  # Make space for titles and labels
+
+    # Display the combined plot
+    plt.show()
+
+
 
 def plot_mean(all_runs_groups, names, dataset_labels):
     """
@@ -158,11 +410,15 @@ def process_folder2(folder_path, edit_dist, solution_similarities_min, solution_
     # Initialize counters
     total_files = 0
     better_than_0878 = 0
+    instances_in_local_minima = 0
+    instances_stuck_on_BP = 0
+    instances_which_converged = 0
 
     # Initialize lists to store values for later analysis
     edit_dists = []
     hamming_dists_min = []
     hamming_dists_mean = []
+    seeds = []
 
     # List to store approximation ratios for plotting
     all_runs = []
@@ -187,6 +443,7 @@ def process_folder2(folder_path, edit_dist, solution_similarities_min, solution_
                         parts = line.split("seed")
                         seed_part = parts[1].split("on")[0].strip()
                         seed = int(seed_part)
+                        seeds.append(seed)
                     except (IndexError, ValueError):
                         print(f"Warning: Could not parse seed in file {filename}")
                         seed = None
@@ -216,6 +473,12 @@ def process_folder2(folder_path, edit_dist, solution_similarities_min, solution_
             # Check if the last normalized value is better than 0.878
             if training_history[-1] > 0.878:
                 better_than_0878 += 1
+            if training_history[-1] >0.9999:
+                instances_which_converged += 1
+            if len(training_history) < 20:
+                instances_in_local_minima += 1
+            elif training_history[-1] <0.75:
+                instances_stuck_on_BP+= 1
 
             total_files += 1
 
@@ -232,13 +495,19 @@ def process_folder2(folder_path, edit_dist, solution_similarities_min, solution_
     print(f"Folder '{folder_path}':")
     print(f"  Total files processed: {total_files}")
     print(f"  Instances better than 0.878: {better_than_0878}")
-    print(f"  Fraction better than 0.878: {fraction_better_than_0878:.4f}\n")
+    print(f"  Fraction better than 0.878: {fraction_better_than_0878:.4f}")
+    print(f"  Instances in local minima: {instances_in_local_minima}")
+    print(f"  Instances stuck on BP: {instances_stuck_on_BP}")
+    print(f"  Instances which converged: {instances_which_converged}\n")
 
     # Prepare counters dictionary
     counters = {
         'total_files': total_files,
         'better_than_0878': better_than_0878,
-        'fraction_better_than_0878': fraction_better_than_0878
+        'fraction_better_than_0878': fraction_better_than_0878,
+        'instances_in_local_minima': instances_in_local_minima,
+        'instances_stuck_on_BP': instances_stuck_on_BP,
+        'instances_which_converged': instances_which_converged
     }
 
     return {
@@ -246,9 +515,9 @@ def process_folder2(folder_path, edit_dist, solution_similarities_min, solution_
         'hamming_dists_min': hamming_dists_min,
         'hamming_dists_mean': hamming_dists_mean,
         'counters': counters,
-        'all_runs': all_runs
+        'all_runs': all_runs,
+        'seeds': seeds
     }
-
 
 def plot_and_analyze_results(
     folder_path1,
