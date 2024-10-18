@@ -21,7 +21,7 @@ def plot_combined_horizontal(Random_ER_results, Pretrained_ER_results,
     label_fontsize = 22
     tick_fontsize = 20
     legend_fontsize = 22
-    subtitle_fontsize = 30
+    subtitle_fontsize = 28
 
     # Define color scheme
     random_color = '#ff7f0e'      # Orange
@@ -239,7 +239,7 @@ def plot_combined_horizontal(Random_ER_results, Pretrained_ER_results,
         set_legend=False      # Legend already set on the top middle plot
     )
 
-    column_titles = ["Pretrained Runs", "Randomly Initialised Runs", "Mean (Confidence Interval)"]
+    column_titles = ["(A) Pretrained Runs", "(B) Randomly Initialised Runs", "(C) Mean (Confidence Interval)"]
     for i, title in enumerate(column_titles):
         axes[0, i].set_title(title, fontsize=subtitle_fontsize, pad=20)  # Apply to the first row for column titles
 
