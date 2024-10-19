@@ -1,4 +1,4 @@
 This GitHub repository contains the code implementing the numerical investigations undertaken in the accompaning Masters thesis: Navigating Barren Plateaus in Variational Quantum Computing. 
-The repo is split into two folders corresponding to Pat 1 and Part 2 of the thesis. Any code for results presented in the appendix of the thesis will be in the folder for the associated part which the supplemantary result pertained to. 
+The repo is split into two folders corresponding to Part 1 and Part 2 of the thesis. Any code for results presented in the appendix of the thesis will be in the folder for the associated part which the supplemantary result pertained to. 
 Standard python libraries, as well as Pennylane (Part 1) and Qiskit (part 2) are required to run the associated files. It must be noted that sizable qubit sizes were simlutaed and simulation runtimes can be quite long.
 In particular the reuslts for Part 2 were run using the Paswey Supercomputing Center's supercomputer Setonix. All data generated from these trials are presented in the Part 2 folder.
