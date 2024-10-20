@@ -7,8 +7,8 @@ import argparse
 
 ################# Pretraining QAOA EXAMPLE ############################
 
-# max iterations is set to 10 to have runtime of around 10 minutes. To achieve
-#better results this hsould be set to around 500 (will usually only take ~250)
+# max iterations is set to 10 to have runtime of around 10 minutes. To achieve 
+# better results set max iters to 500 (usually only needs ~200)
 
 n=16
 p=256
@@ -22,7 +22,7 @@ times = params_init[1]
 result = QAOA.expectation(Q,qc,GP, gamma_parameters, time_parameters, gammas, times, p,optimize=False,return_max_prob=True)
 print(result)
 print("Pretrained parameters give an approximation ratio for the path graph of: ",result[0]/15, " with probibility of getting correct partition: ",result[1])
-
+# these are the params used for primary trials in thesis
 print("First set of Gammas: ",gammas[:10])
 
 

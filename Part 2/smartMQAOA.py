@@ -6,6 +6,15 @@ from qiskit_aer import AerSimulator
 from qiskit.quantum_info import Statevector
 from qiskit.circuit import Parameter
 
+################# Pretraining QAOA EXAMPLE ############################
+
+# the majority of functions are helper functions which are identical to the ones in the standard qaoa code
+# difference is in the circuit design, which takes two graph structures and two sets of gammas
+# this follwos the unitary defined by Equation 3.11 in the thesis
+
+
+
+
 # returns binary arrays for each of the input integers in x
 def unpackbits(x, num_bits, asbool=True):
     xshape = list(x.shape)
@@ -173,7 +182,9 @@ def amplified_state(qc, gammaG_parameters,gammaP_parameters, time_parameters, ga
     return np.abs(backend.run(qc).result().get_statevector())**2
 
 
-# Assuming map_params and other necessary components are already defined
+############### THE PRIMARY FUNCTION CALLED
+
+# defines getting the epxectaiton value of the circuit as well as the optimisatin routine
 
 def expectation(Q, qc,G, gammaG_parameters,gammaP_parameters, time_parameters, gammasG,gammasP, times, p, return_max_prob=False,optimize=False, method='L-BFGS-B', bounds=None,options = {'maxiter': 100} ):
     n=qc.num_qubits
@@ -197,6 +208,8 @@ def expectation(Q, qc,G, gammaG_parameters,gammaP_parameters, time_parameters, g
         dM=QuantumCircuit(n)
         dM.x(i)
         derivativeM+= [dM]
+
+    # gradients are calculated according to the procedure outlined by Jones et al 2024, reference 144 of the associated thesis
     def gradients(params):
         # Unpack the parameters
         gammasG_opt = params[:p]
@@ -215,34 +228,26 @@ def expectation(Q, qc,G, gammaG_parameters,gammaP_parameters, time_parameters, g
         dGammasG = np.zeros(p)
         dGammasP = np.zeros(p)   
         for i in range(p-1,-1,-1):
-            # compute gradient with respect to t
+  
             dTimes[i] = 2*sum(1.0j*lam.conjugate().data@phi.evolve(derivativeM[i]).data for i in range(n)).real
 
-            # update phi
             udag = reverse_mixing_operator(n,times_opt[i])
             phi=phi.evolve(udag)
 
-            # update lambda
             lam=lam.evolve(udag)
 
-            # compute gradient with respect to gammaP
             dGammasP[i] = 2*(1j*lam.conjugate().data@(QP*phi.data)).real
 
-            # update phi
             udag = reverse_phase_separator(n,GP,gammasP_opt[i])
             phi=phi.evolve(udag)
 
-            # update lambda
             lam=lam.evolve(udag)
 
-            # compute gradient with respect to gammaG
             dGammasG[i] = 2*(1j*lam.conjugate().data@(Q*phi.data)).real
 
-            # update phi
             udag = reverse_phase_separator(n,G,gammasG_opt[i])
             phi=phi.evolve(udag)
 
-            # update lambda
             lam=lam.evolve(udag)
         return np.concatenate((dGammasG, dGammasP, dTimes))
 
@@ -282,8 +287,10 @@ def expectation(Q, qc,G, gammaG_parameters,gammaP_parameters, time_parameters, g
         statevector = backend.run(qc).result().get_statevector()
         probs = (np.abs(statevector)**2)
 
+        # The maximum expectation value is the negative of the minimum found
+        max_expectation_value = -result.fun
         
-        return optimal_gammasG,optimal_gammasP, optimal_times, result, costs,sum(probs[np.where(Q == max(Q))[0]])
+        return optimal_gammasG,optimal_gammasP, optimal_times, result,max_expectation_value,sum(probs[np.where(Q == max(Q))[0]])
     
     else:
         
@@ -313,7 +320,7 @@ def set_up_sim(n,p,G,GP):
     qc = transpile(qc, backend=AerSimulator())
     return Q,qc,gamma_parametersG,gamma_parametersP,time_parameters
 
-'''___________________________________________________'''
+
 
 
 

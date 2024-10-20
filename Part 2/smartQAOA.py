@@ -163,6 +163,8 @@ def expectation(Q, qc,G, gamma_parameters, time_parameters, gammas, times, p, re
         dM=QuantumCircuit(n)
         dM.x(i)
         derivativeM+= [dM]
+
+    # gradients are calculated according to the procedure outlined by Jones et al 2024, reference 144 of the associated thesis
     def gradients(params):
         # Unpack the parameters
         gammas_opt = params[:p]
@@ -183,20 +185,15 @@ def expectation(Q, qc,G, gamma_parameters, time_parameters, gammas, times, p, re
 
             dTimes[i] = 2*sum(1.0j*lam.conjugate().data@phi.evolve(derivativeM[i]).data for i in range(n)).real
 
-
             udag = reverse_mixing_operator(n,times_opt[i])
             phi=phi.evolve(udag)
 
-
             lam=lam.evolve(udag)
-
 
             dGammas[i] = 2*(1j*lam.conjugate().data@(Q*phi.data)).real
 
-
             udag = reverse_phase_separator(n,G,gammas_opt[i])
             phi=phi.evolve(udag)
-
 
             lam=lam.evolve(udag)
         return np.concatenate((dGammas, dTimes))
@@ -253,22 +250,3 @@ def set_up_sim(n,p,G):
     qc = transpile(qc, backend=AerSimulator())
     return Q,qc,gamma_parameters,time_parameters
 
-'''___________________________________________________'''
-def set_up_sv(n,p,G):
-    Q = get_quality_vector(G)
-    qc = initialize_qubits(n)
-    gamma_parameters = [Parameter(f"gamma_{i}") for i in range(p)]
-    time_parameters = [Parameter(f"t_{i}") for i in range(p)]
-    for i in range(p):
-        apply_phase_separator(qc, G, gamma_parameters[i])
-        apply_mixing_operator(qc, time_parameters[i])
-    qc = transpile(qc)
-    return Q,qc,gamma_parameters,time_parameters
-
-
-
-def statevector_test(Q, qc, gamma_parameters, time_parameters, gammas, times, p,n):
-    sv=Statevector.from_label('0'*n)
-    qc = map_params(gammas, times, qc, gamma_parameters, time_parameters, p)
-    sv.evolve(qc)
-    print("done")
