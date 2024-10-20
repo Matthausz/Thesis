@@ -82,7 +82,7 @@ def convert_qubo(G):
 def get_cut(soln,Q):
     return soln.T @ Q @ soln
 
-# Note the quality vector is a mirror image around centre point
+# Note the quality vector is symmetric about centre point
 def get_quality_vector(G):
     n = len(G)
     Q = convert_qubo(G)
@@ -143,7 +143,6 @@ def amplified_state(qc, gamma_parameters, time_parameters, gammas, times, p):
     return np.abs(backend.run(qc).result().get_statevector())**2
 
 
-# Assuming map_params and other necessary components are already defined
 
 def expectation(Q, qc,G, gamma_parameters, time_parameters, gammas, times, p, return_max_prob=False,optimize=False, method='L-BFGS-B', bounds=None,options = {'maxiter': 100} ):
     n=qc.num_qubits
@@ -181,24 +180,24 @@ def expectation(Q, qc,G, gamma_parameters, time_parameters, gammas, times, p, re
         dTimes = np.zeros(p)
         dGammas = np.zeros(p)   
         for i in range(p-1,-1,-1):
-            # compute gradient with respect to t
+
             dTimes[i] = 2*sum(1.0j*lam.conjugate().data@phi.evolve(derivativeM[i]).data for i in range(n)).real
 
-            # update phi
+
             udag = reverse_mixing_operator(n,times_opt[i])
             phi=phi.evolve(udag)
 
-            # update lambda
+
             lam=lam.evolve(udag)
 
-            # compute gradient with respect to gamma
+
             dGammas[i] = 2*(1j*lam.conjugate().data@(Q*phi.data)).real
 
-            # update phi
+
             udag = reverse_phase_separator(n,G,gammas_opt[i])
             phi=phi.evolve(udag)
 
-            # update lambda
+
             lam=lam.evolve(udag)
         return np.concatenate((dGammas, dTimes))
 
